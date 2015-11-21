@@ -799,14 +799,16 @@ var ClicksVideo = function(youTubeAPIKey, id, container, onReady) {
 
 
 ClicksVideo.prototype.zoomLevels_ = function() {
-  // TODO: make this dynamic and refuse to zoom beyond 1:1
-  return [
-    1.0,
-    1.5,
-    2.0,
-    2.5,
-    3.0,
-  ];
+  var ret = [];
+  var zoom = 1.0;
+  while (true) {
+    ret.push(zoom);
+    if (this.actualZoomLevel_(zoom) >= 1.0) {
+      break;
+    }
+    zoom += 0.5;
+  }
+  return ret;
 };
 
 
@@ -816,8 +818,14 @@ ClicksVideo.prototype.getZoomLevel = function() {
 
 
 ClicksVideo.prototype.zoom = function(zoomLevel) {
-  // TODO: sotp overzoom
-  this.zoomLevel_ = zoomLevel;
+  var zoomLevels = this.zoomLevels_();
+  this.zoomLevel_ = zoomLevels[zoomLevels.length - 1];
+  for (var i = 0; i < zoomLevels.length; i++) {
+    if (zoomLevels[i] >= zoomLevel) {
+      this.zoomLevel_ = zoomLevels[i];
+      break;
+    }
+  }
   this.resize();
 };
 
@@ -842,11 +850,16 @@ ClicksVideo.prototype.unhide = function() {
 };
 
 
-ClicksVideo.prototype.resize = function() {
+ClicksVideo.prototype.actualZoomLevel_ = function(zoomLevel) {
   var zoom = Math.min(
       this.container_.clientWidth / this.videoRes[0],
       this.container_.clientHeight / this.videoRes[1]);
-  zoom = Math.min(zoom * this.zoomLevel_, 1.0);
+  return zoom * zoomLevel;
+};
+
+
+ClicksVideo.prototype.resize = function() {
+  zoom = Math.min(this.actualZoomLevel_(this.zoomLevel_), 1.0);
   this.playerScale_.style.transform = [
     'scale(' + zoom + ',' + zoom + ')',
   ].join(' ');
