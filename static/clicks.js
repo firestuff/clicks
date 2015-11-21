@@ -121,7 +121,7 @@ Clicks.prototype.onAddVideoValueChanged_ = function(e) {
   var parse = document.createElement('a');
   parse.href = value;
 
-  if (parse.hostname == 'youtu.be' || parse.hostname == 'www.youtu.be' && parse.pathname.length == 12) {
+  if ((parse.hostname == 'youtu.be' || parse.hostname == 'www.youtu.be') && parse.pathname.length == 12) {
     this.addVideo(parse.pathname.substring(1));
     return;
   }
