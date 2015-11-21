@@ -281,6 +281,40 @@ Clicks.prototype.buildUI_ = function() {
             'key': '+',
           },
         ],
+        [
+          {
+            'img': 'zoom-1x',
+            'key': '!',
+          },
+          {
+            'img': 'zoom-15x',
+            'key': '@',
+          },
+          {
+            'img': 'zoom-2x',
+            'key': '#',
+          },
+          {
+            'img': 'zoom-25x',
+            'key': '$',
+          },
+          {
+            'img': 'zoom-3x',
+            'key': '%',
+          },
+          {
+            'img': 'zoom-35x',
+            'key': '^',
+          },
+          {
+            'img': 'zoom-4x',
+            'key': '&',
+          },
+          {
+            'img': 'zoom-45x',
+            'key': '*',
+          },
+        ],
       ],
     },
     {
@@ -540,6 +574,16 @@ Clicks.prototype.updateControls_ = function(e) {
   this.setButtonActive_('rate-125x', activeRate == 1.25);
   this.setButtonActive_('rate-15x', activeRate == 1.5);
   this.setButtonActive_('rate-2x', activeRate == 2.0);
+
+  var zoomLevel = this.activePlayer_.getZoomLevel();
+  this.setButtonActive_('zoom-1x', zoomLevel == 1.0);
+  this.setButtonActive_('zoom-15x', zoomLevel == 1.5);
+  this.setButtonActive_('zoom-2x', zoomLevel == 2.0);
+  this.setButtonActive_('zoom-25x', zoomLevel == 2.5);
+  this.setButtonActive_('zoom-3x', zoomLevel == 3.0);
+  this.setButtonActive_('zoom-35x', zoomLevel == 3.5);
+  this.setButtonActive_('zoom-4x', zoomLevel == 4.0);
+  this.setButtonActive_('zoom-45x', zoomLevel == 4.5);
 };
 
 
@@ -841,15 +885,14 @@ ClicksVideo.prototype.getZoomLevel = function() {
 };
 
 
-ClicksVideo.prototype.zoom = function(zoomLevel) {
+ClicksVideo.prototype.fixZoom_ = function() {
   var zoomLevels = this.zoomLevels_();
-  this.zoomLevel_ = zoomLevels[zoomLevels.length - 1];
-  for (var i = 0; i < zoomLevels.length; i++) {
-    if (zoomLevels[i] >= zoomLevel) {
-      this.zoomLevel_ = zoomLevels[i];
-      break;
-    }
-  }
+  this.zoomLevel_ = Math.min(this.zoomLevel_, zoomLevels[zoomLevels.length - 1]);
+}
+
+
+ClicksVideo.prototype.zoom = function(zoomLevel) {
+  this.zoomLevel_ = zoomLevel;
   this.resize();
 };
 
@@ -883,6 +926,7 @@ ClicksVideo.prototype.actualZoomLevel_ = function(zoomLevel) {
 
 
 ClicksVideo.prototype.resize = function() {
+  this.fixZoom_();
   zoom = Math.min(this.actualZoomLevel_(this.zoomLevel_), 1.0);
   this.playerScale_.style.transform = [
     'scale(' + zoom + ',' + zoom + ')',
