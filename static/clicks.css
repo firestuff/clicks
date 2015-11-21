@@ -296,6 +296,12 @@
   right: 0;
   bottom: 0;
   overflow: scroll;
+
+  visibility: hidden;
+}
+
+.clicks-player-container-active {
+  visibility: visible;
 }
 
 .clicks-player-crop {

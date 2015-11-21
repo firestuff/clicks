@@ -3,7 +3,6 @@ var Clicks = function(youTubeAPIKey, container, takeDocumentHashOwnership, track
   this.container_ = container;
   this.players_ = [];
   this.activePlayer_ = null;
-  this.zoomLevel_ = 1.0;
   this.delayedConfig_ = {};
 
   this.buildUI_();
@@ -38,13 +37,14 @@ Clicks.keyStrings = {
   ' ': '<space>',
   '\x1b': '<esc>',
 };
-Clicks.zoomLevels = [
-  1.0,
-  1.5,
-  2.0,
-  2.5,
-  3.0,
-];
+
+
+Clicks.createElementAndAppend = function(className, parentNode) {
+  var element = document.createElement('div');
+  element.className = className;
+  parentNode.appendChild(element);
+  return element;
+};
 
 
 Clicks.prototype.trackEvent_ = function(var_args) {
@@ -101,14 +101,6 @@ Clicks.prototype.takeDocumentHashOwnership = function() {
 };
 
 
-Clicks.prototype.createElementAndAppend_ = function(className, parentNode) {
-  var element = document.createElement('div');
-  element.className = className;
-  parentNode.appendChild(element);
-  return element;
-};
-
-
 Clicks.prototype.onAddVideoValueChanged_ = function(e) {
   var value = e.target.textContent;
 
@@ -138,32 +130,32 @@ Clicks.prototype.onAddVideoValueChanged_ = function(e) {
 Clicks.prototype.buildUI_ = function() {
   this.container_.tabIndex = -1;
 
-  this.addVideo_ = this.createElementAndAppend_(
+  this.addVideo_ = Clicks.createElementAndAppend(
       'clicks-add-video clicks-add-video-active', this.container_);
-  var addVideoDialog = this.createElementAndAppend_(
+  var addVideoDialog = Clicks.createElementAndAppend(
       'clicks-add-video-dialog', this.addVideo_);
-  this.addVideoValue_ = this.createElementAndAppend_(
+  this.addVideoValue_ = Clicks.createElementAndAppend(
       'clicks-add-video-input', addVideoDialog);
   this.addVideoValue_.contentEditable = true;
   this.addVideoValue_.addEventListener('keypress', function(e) { e.stopPropagation(); });
   this.addVideoValue_.addEventListener('input', this.onAddVideoValueChanged_.bind(this));
   this.addVideoValue_.focus();
 
-  this.loading_ = this.createElementAndAppend_(
+  this.loading_ = Clicks.createElementAndAppend(
       'clicks-loading', this.container_);
 
-  this.controls_ = this.createElementAndAppend_(
+  this.controls_ = Clicks.createElementAndAppend(
       'clicks-controls', this.container_);
 
-  var infoArea = this.createElementAndAppend_(
+  var infoArea = Clicks.createElementAndAppend(
       'clicks-control-info-area', this.controls_);
-  this.title_ = this.createElementAndAppend_(
+  this.title_ = Clicks.createElementAndAppend(
       'clicks-title', infoArea);
-  this.channel_ = this.createElementAndAppend_(
+  this.channel_ = Clicks.createElementAndAppend(
       'clicks-channel', infoArea);
-  this.currentTime_ = this.createElementAndAppend_(
+  this.currentTime_ = Clicks.createElementAndAppend(
       'clicks-current-time', infoArea);
-  this.totalTime_ = this.createElementAndAppend_(
+  this.totalTime_ = Clicks.createElementAndAppend(
       'clicks-total-time', infoArea);
 
   this.buffering_ = document.createElement('img');
@@ -331,7 +323,7 @@ Clicks.prototype.buildUI_ = function() {
   ];
 
 
-  var selectArea = this.createElementAndAppend_(
+  var selectArea = Clicks.createElementAndAppend(
       'clicks-control-section-select-area', this.controls_);
 
   this.sectionSelectors_ = {};
@@ -339,7 +331,7 @@ Clicks.prototype.buildUI_ = function() {
   for (var i = 0; i < controls.length; i++) {
     var section = controls[i];
 
-    var sectionSelect = this.createElementAndAppend_(
+    var sectionSelect = Clicks.createElementAndAppend(
         'clicks-control-section-select', selectArea);
     sectionSelect.textContent = section.title;
     sectionSelect.addEventListener(
@@ -347,7 +339,7 @@ Clicks.prototype.buildUI_ = function() {
     this.sectionSelectors_[section.title] = sectionSelect;
   }
 
-  var sectionArea = this.createElementAndAppend_(
+  var sectionArea = Clicks.createElementAndAppend(
       'clicks-control-section-area', this.controls_);
 
   this.sections_ = {};
@@ -356,13 +348,13 @@ Clicks.prototype.buildUI_ = function() {
   for (var i = 0; i < controls.length; i++) {
     var section = controls[i];
 
-    var sectionNode = this.createElementAndAppend_(
+    var sectionNode = Clicks.createElementAndAppend(
         'clicks-control-section', sectionArea);
     this.sections_[section.title] = sectionNode;
 
     for (var j = 0; j < section.buttons.length; j++) {
       var buttons = section.buttons[j];
-      var row = this.createElementAndAppend_(
+      var row = Clicks.createElementAndAppend(
           'clicks-control-section-row', sectionNode);
 
       for (var k = 0; k < buttons.length; k++) {
@@ -374,20 +366,11 @@ Clicks.prototype.buildUI_ = function() {
     }
   }
 
-  this.playersContainer_ = this.createElementAndAppend_(
+  this.playersContainer_ = Clicks.createElementAndAppend(
       'clicks-players-container', this.container_);
-  var playerContainer = this.createElementAndAppend_(
-      'clicks-player-container', this.playersContainer_);
-  this.playerCrop_ = this.createElementAndAppend_(
-      'clicks-player-crop', playerContainer);
-  this.playerScale_ = this.createElementAndAppend_(
-      'clicks-player-scale', this.playerCrop_);
-  var playerOverlay = this.createElementAndAppend_(
-      'clicks-player-overlay', this.playerScale_);
 
   this.activateControlSection_(controls[0].title);
 
-  playerOverlay.addEventListener('click', this.showHideControls_.bind(this));
   this.container_.addEventListener('click', this.showHideControls_.bind(this));
 };
 
@@ -467,7 +450,7 @@ Clicks.prototype.getConfigString = function() {
   var config = {
     'ytid': this.activePlayer_.id,
     'rate': this.activePlayer_.getRate().realRate,
-    'zoom': this.zoomLevel_,
+    'zoom': this.activePlayer_.getZoomLevel(),
     'muted': this.activePlayer_.player.isMuted() ? 1 : 0,
     'time': this.activePlayer_.player.getCurrentTime(),
   };
@@ -562,10 +545,7 @@ Clicks.prototype.updateControls_ = function(e) {
 
 Clicks.prototype.addVideo = function(id) {
   console.log('Adding YouTube video ID:', id);
-  var playerNode = document.createElement('div');
-  playerNode.style.visibility = 'hidden';
-  this.playerScale_.appendChild(playerNode);
-  new ClicksVideo(this.youTubeAPIKey_, id, playerNode, this.onVideoAdded_.bind(this));
+  new ClicksVideo(this.youTubeAPIKey_, id, this.playersContainer_, this.onVideoAdded_.bind(this));
 
   this.addVideo_.className = 'clicks-add-video';
   this.container_.focus();
@@ -585,7 +565,7 @@ Clicks.prototype.onVideoAdded_ = function(player) {
         this.activePlayer_.setRate(parseFloat(value));
         break;
       case 'zoom':
-        this.zoomLevel_ = parseFloat(value);
+        this.activePlayer_.zoom(parseFloat(value));
         break;
       case 'muted':
         if (parseInt(value)) {
@@ -599,7 +579,7 @@ Clicks.prototype.onVideoAdded_ = function(player) {
         break;
     }
   }
-  this.resizePlayer_(player);
+  this.activePlayer_.resize();
   this.activePlayer_.player.unMute();
 
   document.title = player.metadata.title;
@@ -630,7 +610,7 @@ Clicks.prototype.onVideoAdded_ = function(player) {
     this.sections_['Markers'].appendChild(markerNode);
   }
 
-  player.playerNode.style.visibility = 'visible';
+  player.unhide();
   this.loading_.className = 'clicks-loading clicks-loading-complete';
   player.player.playVideo();
 
@@ -638,24 +618,9 @@ Clicks.prototype.onVideoAdded_ = function(player) {
 };
 
 
-Clicks.prototype.resizePlayer_ = function(player) {
-  var zoom = Math.min(
-      this.container_.clientWidth / player.videoRes[0],
-      this.container_.clientHeight / player.videoRes[1]);
-  zoom = Math.min(zoom * this.zoomLevel_, 1.0);
-  this.playerScale_.style.transform = [
-    'scale(' + zoom + ',' + zoom + ')',
-  ].join(' ');
-  this.playerScale_.style.width = player.videoRes[0];
-  this.playerScale_.style.height = player.videoRes[1];
-  this.playerCrop_.style.width = Math.ceil(player.videoRes[0] * zoom);
-  this.playerCrop_.style.height = Math.ceil(player.videoRes[1] * zoom);
-};
-
-
 Clicks.prototype.onWindowResize_ = function(e) {
   for (var i = 0; i < this.players_.length; i++) {
-    this.resizePlayer_(this.players_[i]);
+    this.players_[i].resize();
   }
 };
 
@@ -770,16 +735,12 @@ Clicks.prototype.onKeyPress_ = function(e) {
 
     case '-':
     case '_':
-      var i = Clicks.zoomLevels.indexOf(this.zoomLevel_);
-      this.zoomLevel_ = Clicks.zoomLevels[i - 1] || this.zoomLevel_;
-      this.resizePlayer_(this.activePlayer_);
+      this.activePlayer_.zoomOut();
       break;
 
     case '+':
     case '=':
-      var i = Clicks.zoomLevels.indexOf(this.zoomLevel_);
-      this.zoomLevel_ = Clicks.zoomLevels[i + 1] || this.zoomLevel_;
-      this.resizePlayer_(this.activePlayer_);
+      this.activePlayer_.zoomIn();
       break;
   }
   this.fireConfigChange();
@@ -819,12 +780,13 @@ Clicks.prototype.exitFullScreen_ = function() {
 
 
 
-var ClicksVideo = function(youTubeAPIKey, id, playerNode, onReady) {
+var ClicksVideo = function(youTubeAPIKey, id, container, onReady) {
   this.youTubeAPIKey_ = youTubeAPIKey;
   this.id = id;
-  this.playerNode = playerNode;
+  this.container_ = container;
   this.onReady_ = onReady;
   this.loading_ = true;
+  this.zoomLevel_ = 1.0;
 
   this.fetchVideoInfo_(id, this.onMetadataResponse_.bind(this));
 
@@ -833,6 +795,65 @@ var ClicksVideo = function(youTubeAPIKey, id, playerNode, onReady) {
   } else {
     Clicks.onYouTubeIframeAPIReady.push(this.onAPIReady_.bind(this));
   }
+};
+
+
+ClicksVideo.prototype.zoomLevels_ = function() {
+  // TODO: make this dynamic and refuse to zoom beyond 1:1
+  return [
+    1.0,
+    1.5,
+    2.0,
+    2.5,
+    3.0,
+  ];
+};
+
+
+ClicksVideo.prototype.getZoomLevel = function() {
+  return this.zoomLevel_;
+};
+
+
+ClicksVideo.prototype.zoom = function(zoomLevel) {
+  // TODO: sotp overzoom
+  this.zoomLevel_ = zoomLevel;
+  this.resize();
+};
+
+
+ClicksVideo.prototype.zoomOut = function() {
+  var zoomLevels = this.zoomLevels_();
+  var i = zoomLevels.indexOf(this.zoomLevel_);
+  this.zoom(zoomLevels[i - 1] || this.zoomLevel_);
+};
+
+
+ClicksVideo.prototype.zoomIn = function() {
+  var zoomLevels = this.zoomLevels_();
+  var i = zoomLevels.indexOf(this.zoomLevel_);
+  this.zoom(zoomLevels[i + 1] || this.zoomLevel_);
+};
+
+
+ClicksVideo.prototype.unhide = function() {
+  this.playerContainer_.className =
+    'clicks-player-container clicks-player-container-active';
+};
+
+
+ClicksVideo.prototype.resize = function() {
+  var zoom = Math.min(
+      this.container_.clientWidth / this.videoRes[0],
+      this.container_.clientHeight / this.videoRes[1]);
+  zoom = Math.min(zoom * this.zoomLevel_, 1.0);
+  this.playerScale_.style.transform = [
+    'scale(' + zoom + ',' + zoom + ')',
+  ].join(' ');
+  this.playerScale_.style.width = this.videoRes[0];
+  this.playerScale_.style.height = this.videoRes[1];
+  this.playerCrop_.style.width = Math.ceil(this.videoRes[0] * zoom);
+  this.playerCrop_.style.height = Math.ceil(this.videoRes[1] * zoom);
 };
 
 
@@ -860,8 +881,17 @@ ClicksVideo.prototype.onPlayerStateChange_ = function(e) {
 
 
 ClicksVideo.prototype.onAPIReady_ = function() {
+  this.playerContainer_ = Clicks.createElementAndAppend(
+      'clicks-player-container', this.container_);
+  this.playerCrop_ = Clicks.createElementAndAppend(
+      'clicks-player-crop', this.playerContainer_);
+  this.playerScale_ = Clicks.createElementAndAppend(
+      'clicks-player-scale', this.playerCrop_);
+  this.playerOverlay_ = Clicks.createElementAndAppend(
+      'clicks-player-overlay', this.playerScale_);
+
   var tempNode = document.createElement('div');
-  this.playerNode.appendChild(tempNode);
+  this.playerScale_.appendChild(tempNode);
   this.player = new YT.Player(tempNode, {
     height: '1080',
     width: '1920',
