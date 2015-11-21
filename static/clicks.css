@@ -295,6 +295,7 @@
   right: 0;
   bottom: 0;
   overflow: scroll;
+  text-align: center;
 
   visibility: hidden;
 }
@@ -304,15 +305,12 @@
 }
 
 .clicks-player-crop {
+  display: inline-block;
 }
 
 .clicks-player-scale {
   position: relative;
   transform-origin: top left;
-}
-
-.clicks-player-container-active .clicks-player-scale {
-  transition: transform 0.3s ease-in-out;
 }
 
 .clicks-player-overlay {
