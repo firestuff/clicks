@@ -374,8 +374,10 @@ Clicks.prototype.buildUI_ = function() {
     }
   }
 
+  this.playersContainer_ = this.createElementAndAppend_(
+      'clicks-players-container', this.container_);
   var playerContainer = this.createElementAndAppend_(
-      'clicks-player-container', this.container_);
+      'clicks-player-container', this.playersContainer_);
   this.playerCrop_ = this.createElementAndAppend_(
       'clicks-player-crop', playerContainer);
   this.playerScale_ = this.createElementAndAppend_(

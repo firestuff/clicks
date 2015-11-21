@@ -277,7 +277,7 @@
   font-family: "source-code-pro";
 }
 
-.clicks-player-container {
+.clicks-players-container {
   position: absolute;
   -webkit-user-select: none;
   -moz-user-select: none;
@@ -286,12 +286,16 @@
   left: 0;
   right: 0;
   bottom: 0;
-#  TODO(flamingcow): How do we center this?
-#  display: flex;
-#  align-items: center;
-#  justify-content: center;
-  overflow: scroll;
   background-color: black;
+}
+
+.clicks-player-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: scroll;
 }
 
 .clicks-player-crop {
