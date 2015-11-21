@@ -310,6 +310,9 @@
 .clicks-player-scale {
   position: relative;
   transform-origin: top left;
+}
+
+.clicks-player-container-active .clicks-player-scale {
   transition: transform 0.3s ease-in-out;
 }
 
