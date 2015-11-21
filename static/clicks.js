@@ -737,10 +737,34 @@ Clicks.prototype.onKeyPress_ = function(e) {
     case '_':
       this.activePlayer_.zoomOut();
       break;
-
     case '+':
     case '=':
       this.activePlayer_.zoomIn();
+      break;
+
+    case '!':
+      this.activePlayer_.zoom(1.0);
+      break;
+    case '@':
+      this.activePlayer_.zoom(1.5);
+      break;
+    case '#':
+      this.activePlayer_.zoom(2.0);
+      break;
+    case '$':
+      this.activePlayer_.zoom(2.5);
+      break;
+    case '%':
+      this.activePlayer_.zoom(3.0);
+      break;
+    case '^':
+      this.activePlayer_.zoom(3.5);
+      break;
+    case '&':
+      this.activePlayer_.zoom(4.0);
+      break;
+    case '*':
+      this.activePlayer_.zoom(4.5);
       break;
   }
   this.fireConfigChange();
