@@ -866,29 +866,22 @@ var ClicksVideo = function(youTubeAPIKey, id, container, onReady) {
 };
 
 
-ClicksVideo.prototype.zoomLevels_ = function() {
-  var ret = [];
-  var zoom = 1.0;
-  while (true) {
-    ret.push(zoom);
-    if (this.actualZoomLevel_(zoom) >= 1.0) {
-      break;
-    }
-    zoom += 0.5;
-  }
-  return ret;
-};
+// Hardcoded to match UI.
+ClicksVideo.zoomLevels_ = [
+  1.0,
+  1.5,
+  2.0,
+  2.5,
+  3.0,
+  3.5,
+  4.0,
+  4.5,
+];
 
 
 ClicksVideo.prototype.getZoomLevel = function() {
   return this.zoomLevel_;
 };
-
-
-ClicksVideo.prototype.fixZoom_ = function() {
-  var zoomLevels = this.zoomLevels_();
-  this.zoomLevel_ = Math.min(this.zoomLevel_, zoomLevels[zoomLevels.length - 1]);
-}
 
 
 ClicksVideo.prototype.zoom = function(zoomLevel) {
@@ -898,16 +891,14 @@ ClicksVideo.prototype.zoom = function(zoomLevel) {
 
 
 ClicksVideo.prototype.zoomOut = function() {
-  var zoomLevels = this.zoomLevels_();
-  var i = zoomLevels.indexOf(this.zoomLevel_);
-  this.zoom(zoomLevels[i - 1] || this.zoomLevel_);
+  var i = ClicksVideo.zoomLevels_.indexOf(this.zoomLevel_);
+  this.zoom(ClicksVideo.zoomLevels_[i - 1] || this.zoomLevel_);
 };
 
 
 ClicksVideo.prototype.zoomIn = function() {
-  var zoomLevels = this.zoomLevels_();
-  var i = zoomLevels.indexOf(this.zoomLevel_);
-  this.zoom(zoomLevels[i + 1] || this.zoomLevel_);
+  var i = ClicksVideo.zoomLevels_.indexOf(this.zoomLevel_);
+  this.zoom(ClicksVideo.zoomLevels_[i + 1] || this.zoomLevel_);
 };
 
 
@@ -917,17 +908,11 @@ ClicksVideo.prototype.unhide = function() {
 };
 
 
-ClicksVideo.prototype.actualZoomLevel_ = function(zoomLevel) {
+ClicksVideo.prototype.resize = function() {
   var zoom = Math.min(
       this.container_.clientWidth / this.videoRes[0],
       this.container_.clientHeight / this.videoRes[1]);
-  return zoom * zoomLevel;
-};
-
-
-ClicksVideo.prototype.resize = function() {
-  this.fixZoom_();
-  zoom = Math.min(this.actualZoomLevel_(this.zoomLevel_), 1.0);
+  zoom *= this.zoomLevel_;
   this.playerScale_.style.transform = [
     'scale(' + zoom + ',' + zoom + ')',
   ].join(' ');
