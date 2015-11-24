@@ -469,10 +469,18 @@ Clicks.prototype.parseConfigString = function(str) {
       case 'zoom':
       case 'muted':
       case 'time':
+      case 'x':
+      case 'y':
         this.delayedConfig_[keyValue[0]] = keyValue[1];
         break;
     }
   }
+};
+
+
+Clicks.prototype.fixedDecimal_ = function(num, dec) {
+  var mult = Math.pow(10, dec);
+  return Math.floor(num * mult) / mult;
 };
 
 
@@ -481,12 +489,17 @@ Clicks.prototype.getConfigString = function() {
     return '';
   }
 
+  var pan = this.activePlayer_.getPanPosition();
+
   var config = {
     'ytid': this.activePlayer_.id,
     'rate': this.activePlayer_.getRate().realRate,
     'zoom': this.activePlayer_.getZoomLevel(),
+    'x': this.fixedDecimal_(pan[0], 3),
+    'y': this.fixedDecimal_(pan[1], 3),
     'muted': this.activePlayer_.player.isMuted() ? 1 : 0,
-    'time': this.activePlayer_.player.getCurrentTime(),
+    'time': this.fixedDecimal_(
+        this.activePlayer_.player.getCurrentTime(), 3),
   };
   var params = [];
   for (var key in config) {
@@ -623,6 +636,13 @@ Clicks.prototype.onVideoAdded_ = function(player) {
         break;
     }
   }
+  // Pan has to come after zoom
+  if (this.delayedConfig_['x'] && this.delayedConfig_['y']) {
+    this.activePlayer_.setPanPosition(
+        parseFloat(this.delayedConfig_['x']),
+        parseFloat(this.delayedConfig_['y']));
+  }
+
   this.activePlayer_.resize();
   this.activePlayer_.player.unMute();
 
@@ -886,7 +906,10 @@ ClicksVideo.prototype.getZoomLevel = function() {
 
 ClicksVideo.prototype.zoom = function(zoomLevel) {
   this.zoomLevel_ = zoomLevel;
+  var pan = this.getPanPosition();
   this.resize();
+  // Zoom in to the center of viewport, not the top left.
+  this.setPanPosition(pan[0], pan[1]);
 };
 
 
@@ -943,6 +966,27 @@ ClicksVideo.prototype.onPlayerStateChange_ = function(e) {
     this.loading_ = false;
     this.onReady_(this);
   }
+};
+
+
+ClicksVideo.prototype.getPanPosition = function() {
+  return [
+    ((this.playerContainer_.scrollLeft + (this.playerContainer_.clientWidth / 2))
+     / this.playerContainer_.scrollWidth),
+    ((this.playerContainer_.scrollTop + (this.playerContainer_.clientHeight / 2))
+     / this.playerContainer_.scrollHeight),
+  ];
+};
+
+
+ClicksVideo.prototype.setPanPosition = function(x, y) {
+  console.log('setPanPosition', x, y);
+  this.playerContainer_.scrollLeft =
+    ((x * this.playerContainer_.scrollWidth)
+     - (this.playerContainer_.clientWidth / 2));
+  this.playerContainer_.scrollTop =
+    ((y * this.playerContainer_.scrollHeight)
+     - (this.playerContainer_.clientHeight / 2));
 };
 
 
