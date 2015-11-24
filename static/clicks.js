@@ -674,6 +674,8 @@ Clicks.prototype.onVideoAdded_ = function(player) {
     this.sections_['Markers'].appendChild(markerNode);
   }
 
+  // TODO: Need to be at correct seek location before unhide
+
   player.unhide();
   this.loading_.className = 'clicks-loading clicks-loading-complete';
   player.player.playVideo();
@@ -980,7 +982,6 @@ ClicksVideo.prototype.getPanPosition = function() {
 
 
 ClicksVideo.prototype.setPanPosition = function(x, y) {
-  console.log('setPanPosition', x, y);
   this.playerContainer_.scrollLeft =
     ((x * this.playerContainer_.scrollWidth)
      - (this.playerContainer_.clientWidth / 2));
