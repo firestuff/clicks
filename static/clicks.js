@@ -3,7 +3,7 @@ var Clicks = function(youTubeAPIKey, container, takeDocumentHashOwnership, track
   this.container_ = container;
   this.players_ = [];
   this.activePlayer_ = null;
-  this.delayedConfig_ = {};
+  this.inputConfig_ = {};
 
   this.buildUI_();
 
@@ -104,9 +104,11 @@ Clicks.prototype.takeDocumentHashOwnership = function() {
 Clicks.prototype.onAddVideoValueChanged_ = function(e) {
   var value = e.target.textContent;
 
+  // TODO: support start time in source URL
+
   if (value.length == 11 && value.indexOf(':') == -1 && value.indexOf('.') == -1) {
     // Plausible YouTube video ID
-    this.addVideo(value);
+    this.addVideo(value, 0.0);
     return;
   }
 
@@ -114,14 +116,14 @@ Clicks.prototype.onAddVideoValueChanged_ = function(e) {
   parse.href = value;
 
   if ((parse.hostname == 'youtu.be' || parse.hostname == 'www.youtu.be') && parse.pathname.length == 12) {
-    this.addVideo(parse.pathname.substring(1));
+    this.addVideo(parse.pathname.substring(1), 0.0);
     return;
   }
 
   var re = new RegExp('[?&]v=([^&]{11})(&|$)');
   var match = re.exec(parse.search);
   if (match) {
-    this.addVideo(match[1]);
+    this.addVideo(match[1], 0.0);
     return;
   }
 }
@@ -461,19 +463,15 @@ Clicks.prototype.parseConfigString = function(str) {
   var params = str.split(',');
   for (var i = 0; i < params.length; i++) {
     var keyValue = params[i].split('=', 2);
-    switch (keyValue[0]) {
-      case 'ytid':
-        this.addVideo(keyValue[1]);
-        break;
-      case 'rate':
-      case 'zoom':
-      case 'muted':
-      case 'time':
-      case 'x':
-      case 'y':
-        this.delayedConfig_[keyValue[0]] = keyValue[1];
-        break;
+    this.inputConfig_[keyValue[0]] = keyValue[1];
+  }
+
+  if ('ytid' in this.inputConfig_) {
+    var start = 0.0;
+    if ('time' in this.inputConfig_) {
+      start = parseFloat(this.inputConfig_['time']);
     }
+    this.addVideo(this.inputConfig_['ytid'], start);
   }
 };
 
@@ -600,9 +598,9 @@ Clicks.prototype.updateControls_ = function(e) {
 };
 
 
-Clicks.prototype.addVideo = function(id) {
-  console.log('Adding YouTube video ID:', id);
-  new ClicksVideo(this.youTubeAPIKey_, id, this.playersContainer_, this.onVideoAdded_.bind(this));
+Clicks.prototype.addVideo = function(id, start) {
+  console.log('Adding YouTube video:', id, start);
+  new ClicksVideo(this.youTubeAPIKey_, id, start, this.playersContainer_, this.onVideoAdded_.bind(this));
 
   this.addVideo_.className = 'clicks-add-video';
   this.container_.focus();
@@ -615,8 +613,8 @@ Clicks.prototype.addVideo = function(id) {
 Clicks.prototype.onVideoAdded_ = function(player) {
   this.players_.push(player);
   this.activePlayer_ = player;
-  for (var key in this.delayedConfig_) {
-    var value = this.delayedConfig_[key];
+  for (var key in this.inputConfig_) {
+    var value = this.inputConfig_[key];
     switch (key) {
       case 'rate':
         this.activePlayer_.setRate(parseFloat(value));
@@ -631,16 +629,13 @@ Clicks.prototype.onVideoAdded_ = function(player) {
           this.activePlayer_.player.unMute();
         }
         break;
-      case 'time':
-        this.activePlayer_.player.seekTo(parseFloat(value), true);
-        break;
     }
   }
   // Pan has to come after zoom
-  if (this.delayedConfig_['x'] && this.delayedConfig_['y']) {
+  if (this.inputConfig_['x'] && this.inputConfig_['y']) {
     this.activePlayer_.setPanPosition(
-        parseFloat(this.delayedConfig_['x']),
-        parseFloat(this.delayedConfig_['y']));
+        parseFloat(this.inputConfig_['x']),
+        parseFloat(this.inputConfig_['y']));
   }
 
   this.activePlayer_.resize();
@@ -673,8 +668,6 @@ Clicks.prototype.onVideoAdded_ = function(player) {
 
     this.sections_['Markers'].appendChild(markerNode);
   }
-
-  // TODO: Need to be at correct seek location before unhide
 
   player.unhide();
   this.loading_.className = 'clicks-loading clicks-loading-complete';
@@ -870,12 +863,13 @@ Clicks.prototype.exitFullScreen_ = function() {
 
 
 
-var ClicksVideo = function(youTubeAPIKey, id, container, onReady) {
+var ClicksVideo = function(youTubeAPIKey, id, start, container, onReady) {
   this.youTubeAPIKey_ = youTubeAPIKey;
   this.id = id;
   this.container_ = container;
   this.onReady_ = onReady;
-  this.loading_ = true;
+  this.loading_ = 1;
+  this.start_ = start;
   this.zoomLevel_ = 1.0;
 
   this.fetchVideoInfo_(id, this.onMetadataResponse_.bind(this));
@@ -961,11 +955,14 @@ ClicksVideo.prototype.onPlayerReady_ = function(e) {
 
 
 ClicksVideo.prototype.onPlayerStateChange_ = function(e) {
-  if (e.data == YT.PlayerState.PLAYING && this.loading_) {
+  if (this.loading_ == 1 && e.data == YT.PlayerState.PLAYING) {
     this.player.pauseVideo();
-    this.player.seekTo(0, true);
+    this.player.seekTo(this.start_, true);
     this.setRate(1.0);
-    this.loading_ = false;
+    this.loading_ = 2;
+  }
+  if (this.loading_ == 2 && e.data == YT.PlayerState.PAUSED) {
+    this.loading_ = 0;
     this.onReady_(this);
   }
 };
@@ -1012,6 +1009,10 @@ ClicksVideo.prototype.onAPIReady_ = function() {
       'enablejsapi': 1,
       'disablekb': 1,
       'showinfo': 0,
+      'rel': 0,
+      'iv_load_policy': 3,
+      'origin': window.location.origin,
+      'start': this.start_,
     },
     events: {
       'onReady': this.onPlayerReady_.bind(this),
