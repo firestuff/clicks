@@ -1,0 +1,8 @@
+Keyboard scroll when zoomed (arrows)
+Double-click zoom in
+Touch-friendly zoom out
+Pinch to zoom
+Selective sharing
+Short URLs
+Fix the damn YouTube start time bug (onReady shows time 0, then onStateChange shows strange numbers)
+Fix hashchange (respond to manual changes)
