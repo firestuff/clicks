@@ -26,6 +26,7 @@ var Clicks = function(youTubeAPIKey, container, takeDocumentHashOwnership, track
     this.takeDocumentHashOwnership();
   }
 
+  window.addEventListener('keydown', this.onKeyDown_.bind(this));
   window.addEventListener('keypress', this.onKeyPress_.bind(this));
   window.setInterval(this.fireConfigChange.bind(this), 300);
 };
@@ -33,6 +34,12 @@ var Clicks = function(youTubeAPIKey, container, takeDocumentHashOwnership, track
 
 Clicks.youTubeIframeAPIReady = false;
 Clicks.onYouTubeIframeAPIReady = [];
+Clicks.keyCodeMappings = {
+  37: '←',
+  38: '↑',
+  39: '→',
+  40: '↓',
+};
 Clicks.keyStrings = {
   ' ': '<space>',
   '\x1b': '<esc>',
@@ -444,9 +451,7 @@ Clicks.prototype.buildButton_ = function(image, key) {
   button.appendChild(shortcut);
 
   button.addEventListener('click', function(e) {
-    this.onKeyPress_({
-      'charCode': key.charCodeAt(0),
-    });
+    this.handleKey_(key);
     e.stopPropagation();
   }.bind(this));
 
@@ -684,8 +689,21 @@ Clicks.prototype.onWindowResize_ = function(e) {
 };
 
 
+Clicks.prototype.onKeyDown_ = function(e) {
+  var key = Clicks.keyCodeMappings[e.keyCode];
+  if (key) {
+    this.handleKey_(key);
+  }
+};
+
+
 Clicks.prototype.onKeyPress_ = function(e) {
-  switch (String.fromCharCode(e.charCode).toLowerCase()) {
+  this.handleKey_(String.fromCharCode(e.charCode).toLowerCase());
+};
+
+
+Clicks.prototype.handleKey_ = function(key) {
+  switch (key) {
     case ' ':
       if (this.activePlayer_.player.getPlayerState() == YT.PlayerState.PLAYING) {
         this.activePlayer_.player.pauseVideo();
@@ -825,6 +843,22 @@ Clicks.prototype.onKeyPress_ = function(e) {
     case '*':
       this.activePlayer_.zoom(4.5);
       break;
+
+    case '←':
+      this.activePlayer_.pan(-10, 0);
+      break;
+    case '→':
+      this.activePlayer_.pan(10, 0);
+      break;
+    case '↑':
+      this.activePlayer_.pan(0, -10);
+      break;
+    case '↓':
+      this.activePlayer_.pan(0, 10);
+      break;
+
+    default:
+      console.log('Unknown key:', key);
   }
   this.fireConfigChange();
 };
@@ -906,6 +940,12 @@ ClicksVideo.prototype.zoom = function(zoomLevel) {
   this.resize();
   // Zoom in to the center of viewport, not the top left.
   this.setPanPosition(pan[0], pan[1]);
+};
+
+
+ClicksVideo.prototype.pan = function(x, y) {
+  this.playerContainer_.scrollLeft += x;
+  this.playerContainer_.scrollTop += y;
 };
 
 
